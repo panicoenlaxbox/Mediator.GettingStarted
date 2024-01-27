@@ -1,10 +1,12 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using FluentValidation;
 using MediatR;
 using MediatR.Pipeline;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
+
 
 // builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<IApiMarker>());
 builder.Services.AddMediatR(cfg =>
@@ -18,6 +20,7 @@ builder.Services.AddMediatR(cfg =>
     cfg.AddOpenRequestPostProcessor(typeof(GenericPostProcessor<,>));
     cfg.AddRequestPreProcessor<SpecificPreProcessor>();
     cfg.AddRequestPostProcessor<SpecificPostProcessor>();
+    cfg.AddOpenBehavior(typeof(ValidationPipelineBehavior<,>));
 });
 
 // builder.Services.AddDbContext<ExampleContext>(options =>
@@ -29,6 +32,8 @@ builder.Services.AddDbContext<ExampleContext>(
         .AddInterceptors(serviceProvider.GetRequiredService<DispatchDomainEventsInterceptor>()));
 
 builder.Services.AddTransient<DispatchDomainEventsInterceptor>();
+
+builder.Services.AddValidatorsFromAssemblyContaining<IApiMarker>();
 
 
 var app = builder.Build();
@@ -286,6 +291,14 @@ public class CreateCustomerRequest : IRequest<CreateCustomerResponse>
 {
     public string Name { get; set; }
     public string? Description { get; set; }
+    
+    public class CreateCustomerRequestValidator : AbstractValidator<CreateCustomerRequest>
+    {
+        public CreateCustomerRequestValidator()
+        {
+            RuleFor(o => o.Name).NotEmpty();
+        }
+    }
 }
 
 public class CreateCustomerResponse
@@ -399,5 +412,26 @@ public class CustomerUpdatedEventHandler(ILogger<CustomerUpdatedEventHandler> lo
     {
         logger.LogInformation($"CustomerUpdatedEvent handled {notification.Customer}");
         return Task.CompletedTask;
+    }
+}
+
+public class ValidationPipelineBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators)
+    : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IRequest<TResponse>
+{
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
+    {
+        if (!validators.Any())
+        {
+            return await next();
+        }
+
+        foreach (var validator in validators)
+        {
+            await validator.ValidateAndThrowAsync(request, cancellationToken);
+        }
+
+        return await next();
     }
 }

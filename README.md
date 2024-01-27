@@ -7,6 +7,7 @@ It includes examples for the most relevant features.
 - Request/Response
 - Notifications
 - Pipeline Behaviors (generic and non-generic)
+  - Validation behavior using FluentValidation
 - Exception Handling
 - Pre-persistence events using EF Core and MediatR
 
