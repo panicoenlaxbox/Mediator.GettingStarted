@@ -42,6 +42,10 @@ app.MapGet("/notification", async (IMediator mediator) =>
     // At this point, all handlers will have been executed
 });
 app.MapPost("/customers", async (IMediator mediator, CreateCustomerRequest request) => await mediator.Send(request));
+app.MapGet("/orphan", (IMediator mediator) => {
+    mediator.Send(new OrphanCommand());
+    mediator.Publish(new OrphanNotification());
+});
 
 app.Run();
 
@@ -51,6 +55,10 @@ public interface IApiMarker
 }
 
 public class Ping : IRequest<string>
+{
+}
+
+public class OrphanCommand: IRequest
 {
 }
 
@@ -125,6 +133,10 @@ public class RequestExceptionActionProcessorBehavior2(ILogger<RequestExceptionAc
 }
 
 public class MyNotification : INotification
+{
+}
+
+public class OrphanNotification: INotification
 {
 }
 
