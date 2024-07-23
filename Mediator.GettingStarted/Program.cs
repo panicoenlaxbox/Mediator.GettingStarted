@@ -7,8 +7,6 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-// builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<IApiMarker>());
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssemblyContaining<IApiMarker>();
@@ -23,9 +21,6 @@ builder.Services.AddMediatR(cfg =>
     cfg.AddOpenBehavior(typeof(ValidationPipelineBehavior<,>));
 });
 
-// builder.Services.AddDbContext<ExampleContext>(options =>
-//     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
 builder.Services.AddDbContext<ExampleContext>(
     (serviceProvider, options) => options
         .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
@@ -34,7 +29,6 @@ builder.Services.AddDbContext<ExampleContext>(
 builder.Services.AddTransient<DispatchDomainEventsInterceptor>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<IApiMarker>();
-
 
 var app = builder.Build();
 
@@ -48,7 +42,6 @@ app.MapGet("/notification", async (IMediator mediator) =>
     // At this point, all handlers will have been executed
 });
 app.MapPost("/customers", async (IMediator mediator, CreateCustomerRequest request) => await mediator.Send(request));
-
 
 app.Run();
 
